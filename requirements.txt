@@ -4,4 +4,6 @@ bedrock-agentcore>=1.0.0
 bedrock-agentcore-starter-toolkit>=0.1.0
 strands-agents>=1.17.0
 strands-agents-tools>=0.2.16
+playwright>=1.56.0
+nest-asyncio>=1.6.0
 

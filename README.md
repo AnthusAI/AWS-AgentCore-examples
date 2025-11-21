@@ -353,6 +353,7 @@ AWS-AgentCore-examples/
 ├── memory_stm_agent.py         # Example 3: Short-term memory
 ├── memory_ltm_agent.py         # Example 4: Long-term memory
 ├── code_interpreter_agent.py   # Example 5: Code Interpreter (Give an Agent a Tool)
+├── browser_agent.py            # Example 6: Browser Tool (Give an Agent a Tool)
 ├── requirements.txt            # Dependencies
 ├── AGENTS.md                   # Detailed documentation
 ├── LICENSE.md                  # MIT License
@@ -624,6 +625,67 @@ agentcore invoke '{"csv": "Nombre,Apellidos,Correo\nLuis,García,luis@empresa.es
 - **Secure execution** - Code runs in isolated, ephemeral environments
 - **Integrated with Bedrock** - Agent decides when to write/execute code
 - **Production-ready** - Built-in monitoring, logging, and observability
+
+---
+
+### Example 6: Browser Tool Agent 🌐
+
+**File**: `browser_agent.py`
+
+This agent demonstrates AgentCore's managed Browser Tool - another example of the **"Give an Agent a Tool"** paradigm. Instead of writing custom web scraping logic for every website, we give the agent a browser and let it navigate and extract information.
+
+**What AgentCore provides:**
+- **Secure, cloud-based browser runtime** - You don't provision browser infrastructure
+- **VM-level isolation** - Each session is isolated for security
+- **Automatic session management** - Timeouts, cleanup, pooling handled by AWS
+- **Built-in observability** - Monitor browser sessions in real-time
+- **Production-ready** - Scaling, security, monitoring all managed
+
+**Without AgentCore, you'd build:**
+- Browser infrastructure (EC2, containers, Selenium Grid)
+- Session management and cleanup
+- Security isolation between sessions
+- Monitoring and logging
+- Scaling logic
+
+**With AgentCore:**
+- Call `browser_session()` and get a secure browser
+- Focus on WHAT the browser should do, not HOW to run it
+
+**Running it locally:**
+
+```bash
+# Install Playwright
+pip install playwright
+playwright install chromium
+
+# Run the agent
+python browser_agent.py
+```
+
+**Testing - Let the agent explain what AgentCore is:**
+
+```bash
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://aws.amazon.com/bedrock/agentcore/", "question": "What is AWS AgentCore?"}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "url": "https://aws.amazon.com/bedrock/agentcore/",
+  "page_title": "Amazon Bedrock AgentCore- AWS",
+  "question": "What is AWS AgentCore?",
+  "answer": "Amazon Bedrock AgentCore is an agentic platform that allows users to build, deploy, and operate highly capable AI agents securely at scale. Key points:\n\n1. It is a suite of fully-managed services that can be used together or independently to enhance, deploy, and monitor AI agents.\n\n2. It works with any AI framework (e.g. CrewAI, LangGraph, LlamaIndex) and any foundation model, providing flexibility and interoperability.\n\n3. Key capabilities include:\n   - Enhancing agents with tools, memory, and the ability to execute code securely\n   - Deploying agents on secure, serverless infrastructure with low-latency and extended runtimes\n   - Monitoring agent behavior through intuitive dashboards\n\n4. Key benefits include faster time to value, flexibility, and enterprise-grade security and reliability.\n\n5. AgentCore is designed to address the critical business challenges of deploying production-ready AI agents at scale, without the need for infrastructure management.\n\nIn summary, AgentCore is an AWS service that provides a comprehensive platform to build, deploy, and operate highly capable AI agents across various frameworks and models, with a focus on security, scalability, and operational excellence.",
+  "paradigm": "Give an Agent a Tool - browser automation without custom scraping logic!"
+}
+```
+
+**Key takeaway:** The agent visited the AWS AgentCore page and explained what AgentCore is - demonstrating both the Browser Tool capability AND teaching about the platform itself! The same code works for any website - no custom scraping logic needed.
+
+**Note:** The Browser Tool works locally for testing. For production deployment to AWS, there are additional configuration requirements for the browser runtime environment.
 
 ---
 

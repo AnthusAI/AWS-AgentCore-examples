@@ -481,6 +481,106 @@ This isn't just "calling Claude with tool use"—it's using AgentCore's **manage
 
 ---
 
+## Browser Tool Agent
+
+**File**: `browser_agent.py`  
+**Status**: Active (local testing)  
+**SDK**: bedrock-agentcore 1.0.6, playwright 1.56.0  
+**Tool**: Browser Tool (AgentCore managed service)
+
+### Overview
+
+This agent demonstrates AgentCore's managed Browser Tool. Instead of writing custom web scraping logic for every website, we give the agent a browser and let it navigate and extract information.
+
+**Inspired by**: [Give an Agent a Tool](https://github.com/AnthusAI/Give-an-Agent-a-Tool)
+
+### What AgentCore Provides
+
+The Browser Tool is a **managed service** that provides:
+
+1. **Secure, cloud-based browser runtime** - You don't provision browser infrastructure
+2. **VM-level isolation** - Each session is isolated for security
+3. **Automatic session management** - Timeouts, cleanup, pooling handled by AWS
+4. **Built-in observability** - Monitor browser sessions in real-time
+5. **Production-ready** - Scaling, security, monitoring all managed
+
+### Without AgentCore
+
+You would need to build:
+- Browser infrastructure (EC2 instances, Selenium Grid, containers)
+- Session management and cleanup logic
+- Security isolation between sessions
+- Monitoring and logging systems
+- Scaling and load balancing
+
+### With AgentCore
+
+```python
+from bedrock_agentcore.tools.browser_client import browser_session
+
+# That's it! AgentCore provides the secure browser
+with browser_session('us-west-2') as client:
+    ws_url, headers = client.generate_ws_headers()
+    # Connect to AgentCore's managed browser
+```
+
+### How It Works
+
+1. Agent receives a URL and question
+2. Agent connects to AgentCore's secure browser session
+3. Agent navigates to the URL using Playwright
+4. Agent extracts page content
+5. Agent uses Claude to analyze the content and answer the question
+
+**Key insight**: The SAME code works for any website - no custom scraping logic!
+
+### Example: Agent Explains AgentCore
+
+The perfect meta-example - the agent visits the AWS AgentCore page and explains what AgentCore is:
+
+```bash
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://aws.amazon.com/bedrock/agentcore/", "question": "What is AWS AgentCore?"}'
+```
+
+**Response**: The agent successfully navigates to the AgentCore page, extracts content, and provides a comprehensive explanation:
+
+> "Amazon Bedrock AgentCore is an agentic platform that allows users to build, deploy, and operate highly capable AI agents securely at scale... It is a suite of fully-managed services... works with any AI framework... Key capabilities include enhancing agents with tools, memory, and the ability to execute code securely..."
+
+This demonstrates both the Browser Tool capability AND teaches about the platform itself!
+
+### Testing Locally
+
+```bash
+# Install dependencies
+pip install playwright nest-asyncio
+playwright install chromium
+
+# Run the agent
+python browser_agent.py
+
+# Test with any website
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "question": "What is this website about?"}'
+```
+
+### Deployment Note
+
+The Browser Tool works perfectly for local testing. For production deployment to AWS AgentCore, there are additional configuration requirements for the browser runtime environment (Playwright binaries, permissions, etc.).
+
+### Key Takeaway
+
+This demonstrates the paradigm shift:
+
+**Traditional**: Write custom scraping logic for each website structure  
+**Agent**: Give the agent a browser and let it adapt to any website
+
+The agent figures out how to navigate and extract information - you just provide the tool and the goal.
+
+---
+
 ## Shared Agent Registry
 
 Keep track of agents in this playground:
@@ -492,6 +592,7 @@ Keep track of agents in this playground:
 | STM Agent | memory_stm_agent.py | Short-term memory | Active | 2025-11-20 |
 | LTM Agent | memory_ltm_agent.py | Long-term memory | Active | 2025-11-20 |
 | Code Interpreter | code_interpreter_agent.py | Code execution tool | Active | 2025-11-21 |
+| Browser Tool | browser_agent.py | Web automation tool | Active (local) | 2025-11-21 |
 
 Update this table when creating new agents or making changes.
 
