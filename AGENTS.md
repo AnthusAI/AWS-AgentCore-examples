@@ -375,6 +375,112 @@ agentcore configure --entrypoint memory_ltm_agent.py
 
 ---
 
+## Code Interpreter Agent
+
+**File**: `code_interpreter_agent.py`  
+**Status**: Active  
+**SDK**: bedrock-agentcore 1.0.6, strands-agents 1.17.0  
+**Tool**: Code Interpreter (AgentCore managed service)
+
+### Overview
+
+This agent demonstrates the **"Give an Agent a Tool"** paradigm using AgentCore's managed Code Interpreter. Instead of writing complex parsing logic for every possible CSV format, we give the agent ONE tool (Code Interpreter) and let it figure out how to solve the problem.
+
+**Inspired by**: [Give an Agent a Tool](https://github.com/AnthusAI/Give-an-Agent-a-Tool)
+
+### The Problem
+
+You receive CSV files with varying formats:
+- Different headers: "First Name,Last Name,Email" vs "Nombre,Apellidos,Correo"
+- Different languages: English, Spanish, etc.
+- Different column orders: "Last,First" vs "First,Last"
+- Messy legacy formats with mixed data
+
+**Traditional approach**: Write if/else logic for every variation (brittle, hard to maintain)  
+**Agent approach**: Give the agent Code Interpreter and let it adapt (flexible, self-maintaining)
+
+### How It Works
+
+1. Agent receives CSV data as input
+2. Agent analyzes the format (headers, language, structure)
+3. Agent writes Python code to parse and extract contacts
+4. Code Interpreter executes the code in AgentCore's secure sandbox
+5. Agent returns structured contact data
+
+**Key insight**: The SAME code handles English, Spanish, reversed columns, messy formats—no changes needed!
+
+### Code Interpreter Tool
+
+AgentCore's Code Interpreter is a **managed service**:
+- Secure Python sandbox (isolated, ephemeral environments)
+- Integrated with Bedrock (agent decides when to write/execute code)
+- Production-ready (built-in monitoring, logging, observability)
+- You don't build the sandbox—AgentCore provides it
+
+### Testing Locally
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the agent
+python code_interpreter_agent.py
+
+# Test with English CSV
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"csv": "First Name,Last Name,Email\nJohn,Doe,john@example.com"}'
+
+# Test with Spanish CSV - NO CODE CHANGES!
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"csv": "Nombre,Apellidos,Correo\nLuis,García,luis@empresa.es"}'
+```
+
+### Deploying to AWS
+
+```bash
+agentcore configure --entrypoint code_interpreter_agent.py --non-interactive
+agentcore launch
+
+# Test in the cloud
+agentcore invoke '{"csv": "First Name,Last Name,Email\nJohn,Doe,john@example.com"}'
+agentcore invoke '{"csv": "Nombre,Apellidos,Correo\nLuis,García,luis@empresa.es"}'
+```
+
+### Example Response
+
+```json
+{
+  "success": true,
+  "message": "Contacts extracted successfully using Code Interpreter",
+  "agent_response": "Perfect! I've successfully extracted the contacts...\n[{\"name\": \"Luis García\", \"email\": \"luis@empresa.es\"}]",
+  "paradigm": "Give an Agent a Tool - no hard-coded parsing logic needed!"
+}
+```
+
+### Key Takeaway
+
+This demonstrates the paradigm shift from traditional programming to agent-based programming:
+
+**Traditional**: You must think of everything (every format, every edge case, every language)  
+**Agent**: You provide ONE capability (Code Interpreter) and let intelligence emerge
+
+When a new CSV format appears:
+- Traditional: Add more if/else branches, risk breaking existing code
+- Agent: Same code, agent adapts automatically
+
+### What Makes This AgentCore-Specific
+
+This isn't just "calling Claude with tool use"—it's using AgentCore's **managed Code Interpreter service**:
+
+1. **You don't build the sandbox** - AgentCore provides secure Python execution
+2. **Production-ready** - Built-in monitoring, logging, observability
+3. **Integrated** - Works seamlessly with AgentCore Memory, Identity, etc.
+4. **Managed** - AWS handles security, scaling, updates
+
+---
+
 ## Shared Agent Registry
 
 Keep track of agents in this playground:
@@ -385,6 +491,7 @@ Keep track of agents in this playground:
 | Claude Agent | claude_agent.py | AI-powered | Active | 2025-11-20 |
 | STM Agent | memory_stm_agent.py | Short-term memory | Active | 2025-11-20 |
 | LTM Agent | memory_ltm_agent.py | Long-term memory | Active | 2025-11-20 |
+| Code Interpreter | code_interpreter_agent.py | Code execution tool | Active | 2025-11-21 |
 
 Update this table when creating new agents or making changes.
 

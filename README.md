@@ -4,6 +4,17 @@
 
 This repository contains working examples of AWS AgentCore agents, from basic structure to AI-powered applications. Created by the team at [Anthus](https://anthus.ai) as we explore AgentCore capabilities. All examples are tested and deployed to AWS.
 
+## "Give an Agent a Tool" 🛠️
+
+This playground demonstrates the **["Give an Agent a Tool"](https://github.com/AnthusAI/Give-an-Agent-a-Tool)** paradigm - a fundamental shift in how we write software:
+
+> _"Give a man a fish and you feed him for a day. Teach a man to fish and you feed him for a lifetime. **Give an agent a tool and nobody has to fish.**"_
+
+**Traditional programming**: Anticipate every scenario, write explicit logic for each case  
+**Agent programming**: Provide tools and goals, let intelligence emerge
+
+Our examples progress from basic structure to sophisticated agents that use AgentCore's managed services (Memory, Code Interpreter) to solve real problems without hard-coded logic.
+
 ## What is AWS AgentCore?
 
 AWS AgentCore is a **platform for building and deploying AI agents**. At first glance, it looks similar to AWS Lambda (you write a handler function, it runs in the cloud), but it's specifically designed for the unique needs of AI agents.
@@ -337,15 +348,16 @@ agentcore destroy
 
 ```
 AWS-AgentCore-examples/
-├── hello_agent.py          # Example 1: Basic structure
-├── claude_agent.py         # Example 2: AI-powered
-├── memory_stm_agent.py     # Example 3: Short-term memory
-├── memory_ltm_agent.py     # Example 4: Long-term memory
-├── requirements.txt        # Dependencies
-├── AGENTS.md              # Detailed documentation
-├── LICENSE.md             # MIT License
-├── .gitignore             # Git ignore patterns
-└── README.md              # This file
+├── hello_agent.py              # Example 1: Basic structure
+├── claude_agent.py             # Example 2: AI-powered
+├── memory_stm_agent.py         # Example 3: Short-term memory
+├── memory_ltm_agent.py         # Example 4: Long-term memory
+├── code_interpreter_agent.py   # Example 5: Code Interpreter (Give an Agent a Tool)
+├── requirements.txt            # Dependencies
+├── AGENTS.md                   # Detailed documentation
+├── LICENSE.md                  # MIT License
+├── .gitignore                  # Git ignore patterns
+└── README.md                   # This file
 ```
 
 ---
@@ -533,39 +545,85 @@ agentcore invoke '{"prompt": "What do you know about Grace?"}'
 
 ---
 
-## What's Next?
+### Example 5: Code Interpreter Agent 🔧
 
-### Add AgentCore Memory
+**File**: `code_interpreter_agent.py`
 
-Use the built-in Memory service to maintain conversation context:
+This agent demonstrates the **"Give an Agent a Tool"** paradigm using AgentCore's managed Code Interpreter. Instead of writing complex parsing logic for every possible CSV format, we give the agent ONE tool and let it figure out how to solve the problem.
+
+> **Inspired by**: [Give an Agent a Tool](https://github.com/AnthusAI/Give-an-Agent-a-Tool) - A demonstration of the paradigm shift from hard-coded logic to intelligent delegation.
+
+**What it demonstrates:**
+- AgentCore's managed Code Interpreter (secure Python sandbox)
+- The "Give an Agent a Tool" paradigm
+- Agent autonomously writing and executing code
+- Handling varying data formats WITHOUT code changes
+
+**The Problem** (from the Give an Agent a Tool project):
+You receive CSV files with varying formats:
+- Different headers: "First Name,Last Name" vs "Nombre,Apellidos"
+- Different languages: English, Spanish, etc.
+- Different column orders: "Last,First" vs "First,Last"
+- Messy legacy formats
+
+**Traditional approach**: Write if/else logic for every variation  
+**Agent approach**: Give the agent Code Interpreter and let it adapt
+
+**Running it locally:**
 
 ```bash
-# Create a memory resource
-agentcore memory create --name my-agent-memory
+# Install dependencies (includes strands-agents for Code Interpreter)
+pip install -r requirements.txt
 
-# Use it in your agent code
-from bedrock_agentcore.memory import Memory
-memory = Memory("my-agent-memory")
+# Run the agent
+python code_interpreter_agent.py
 ```
 
-### Add Tools
+**Testing with different formats:**
 
-Integrate AgentCore tools:
-- **Code Interpreter** - Execute Python code
-- **Browser** - Interact with web pages
-- **Custom tools** - Your own functions
+```bash
+# English CSV
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"csv": "First Name,Last Name,Email\nJohn,Doe,john@example.com"}'
 
-### Add Identity
+# Spanish CSV - NO CODE CHANGES NEEDED!
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"csv": "Nombre,Apellidos,Correo\nLuis,García,luis@empresa.es"}'
+```
 
-Connect to external services:
-- GitHub repositories
-- Slack workspaces
-- Gmail accounts
-- Custom OAuth apps
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Contacts extracted successfully using Code Interpreter",
+  "agent_response": "Perfect! I've successfully extracted the contacts...\n[{\"name\": \"Luis García\", \"email\": \"luis@empresa.es\"}]",
+  "paradigm": "Give an Agent a Tool - no hard-coded parsing logic needed!"
+}
+```
 
-### Multi-Agent Systems
+**Deploying to AWS:**
 
-Build multiple specialized agents and coordinate them.
+```bash
+# Configure and deploy
+agentcore configure --entrypoint code_interpreter_agent.py --non-interactive
+agentcore launch
+
+# Test with English format
+agentcore invoke '{"csv": "First Name,Last Name,Email\nJohn,Doe,john@example.com"}'
+
+# Test with Spanish format - SAME CODE!
+agentcore invoke '{"csv": "Nombre,Apellidos,Correo\nLuis,García,luis@empresa.es"}'
+```
+
+**Key takeaway:** This is the paradigm shift. The traditional approach requires anticipating every format and writing explicit logic for each. The agent approach provides ONE capability (Code Interpreter) and lets intelligence emerge. When a new format appears, you don't patch code—you reuse the same tool, and the agent adapts.
+
+**What makes this AgentCore-specific:**
+- **Code Interpreter is a managed service** - You don't build the Python sandbox
+- **Secure execution** - Code runs in isolated, ephemeral environments
+- **Integrated with Bedrock** - Agent decides when to write/execute code
+- **Production-ready** - Built-in monitoring, logging, and observability
 
 ---
 
