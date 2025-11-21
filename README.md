@@ -339,12 +339,197 @@ agentcore destroy
 AWS-AgentCore-examples/
 ├── hello_agent.py          # Example 1: Basic structure
 ├── claude_agent.py         # Example 2: AI-powered
+├── memory_stm_agent.py     # Example 3: Short-term memory
+├── memory_ltm_agent.py     # Example 4: Long-term memory
 ├── requirements.txt        # Dependencies
 ├── AGENTS.md              # Detailed documentation
 ├── LICENSE.md             # MIT License
 ├── .gitignore             # Git ignore patterns
 └── README.md              # This file
 ```
+
+---
+
+### Example 3: Short-Term Memory Agent 🧠
+
+**File**: `memory_stm_agent.py`
+
+This agent demonstrates how to actually USE AgentCore's short-term memory to maintain conversation context.
+
+**What it demonstrates:**
+- Storing conversation turns in memory
+- Retrieving recent context
+- Providing context to Claude for continuity
+- Session-based conversations
+
+**The key difference from previous examples:**
+Our earlier agents had memory resources created, but didn't use them. This agent actively stores and retrieves conversation history.
+
+**Running it locally:**
+
+```bash
+# First create a memory resource
+agentcore memory create stm_test_memory
+
+# Run with the memory ID
+BEDROCK_AGENTCORE_MEMORY_ID=stm_test_memory-XXXXXXXXXX python memory_stm_agent.py
+```
+
+**Testing it locally:**
+
+```bash
+# First message
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "My name is Alice and I love Python"}'
+
+# Second message - it remembers!
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What is my name and what do I love?"}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Your name is Alice and you love Python!",
+  "session_id": "default_session",
+  "turns_in_memory": 4,
+  "memory_type": "STM (Short-Term Memory)"
+}
+```
+
+**Deploying to AWS:**
+
+```bash
+# Configure and deploy
+agentcore configure --entrypoint memory_stm_agent.py --non-interactive
+agentcore launch
+
+# Test in the cloud
+agentcore invoke '{"prompt": "Hi! My name is Frank and I love building agents."}'
+
+# Test memory in same session (use session ID from previous response)
+agentcore invoke '{"prompt": "What is my name?"}' --session-id YOUR_SESSION_ID
+```
+
+**Cloud response:**
+```json
+{
+  "success": true,
+  "message": "Your name is Frank, and you expressed a love for building agents.",
+  "session_id": "8e878648-bd6e-4d16-91eb-0d4939c2f878",
+  "turns_in_memory": 4,
+  "memory_type": "STM (Short-Term Memory)"
+}
+```
+
+**Key takeaway:** Short-term memory stores conversation turns within a session. Same session_id = same conversation. The agent retrieves recent turns and provides them as context to Claude, enabling natural conversation flow.
+
+---
+
+### Example 4: Long-Term Memory Agent 💾
+
+**File**: `memory_ltm_agent.py`
+
+This agent demonstrates AgentCore's LONG-TERM MEMORY with semantic strategy - it automatically extracts and stores persistent facts.
+
+**What it demonstrates:**
+- Short-term memory (conversation turns)
+- PLUS automatic extraction of facts/preferences
+- Searching long-term memories across sessions
+- Learning from past interactions
+
+**The magic:** The code is nearly identical to the STM agent! The difference is in the configuration - LTM agents use "semantic strategy" which tells AgentCore to automatically extract insights.
+
+**How it works:**
+1. You have a conversation
+2. AgentCore's semantic strategy extracts key facts (name, preferences, etc.)
+3. Facts are stored in searchable long-term memory
+4. In future sessions, agent searches and retrieves relevant facts
+5. Agent responds with knowledge from past conversations
+
+**Running it locally:**
+
+```bash
+# Create a memory resource WITH semantic strategy
+agentcore memory create ltm_test_memory \
+  --strategies '[{"semanticMemoryStrategy": {"name": "Facts"}}]' \
+  --wait
+
+# Run with the memory ID
+BEDROCK_AGENTCORE_MEMORY_ID=ltm_test_memory-XXXXXXXXXX python memory_ltm_agent.py
+```
+
+**Testing it locally:**
+
+```bash
+# Have a conversation with facts
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "My name is Emma, I work at Anthus, and I love Python and Rust"}'
+
+# Wait 30 seconds for semantic extraction
+sleep 30
+
+# Query what it knows
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What do you know about me?"}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "You are Emma, you work at Anthus building AI agents, and you love Python and Rust!",
+  "long_term_memories_found": 3,
+  "turns_in_memory": 4,
+  "memory_type": "LTM (Long-Term Memory with Semantic Strategy)"
+}
+```
+
+**Deploying to AWS:**
+
+```bash
+# First create a memory with semantic strategy
+agentcore memory create my_ltm_memory \
+  --strategies '[{"semanticMemoryStrategy": {"name": "Facts"}}]' \
+  --wait
+
+# Configure (you'll need to manually edit .bedrock_agentcore.yaml to use your memory)
+agentcore configure --entrypoint memory_ltm_agent.py --non-interactive
+
+# Edit .bedrock_agentcore.yaml:
+# Change memory.mode to: STM_AND_LTM
+# Change memory.memory_id to: my_ltm_memory-XXXXXXXXXX
+
+# Deploy
+agentcore launch
+
+# Test with facts
+agentcore invoke '{"prompt": "Hi! My name is Grace, I work at Anthus, and I love Rust and TypeScript."}'
+
+# Wait 30 seconds for extraction
+sleep 30
+
+# Query in a new session
+agentcore invoke '{"prompt": "What do you know about Grace?"}'
+```
+
+**Cloud response:**
+```json
+{
+  "success": true,
+  "message": "Grace works at Anthus building AI agents and loves Rust and TypeScript!",
+  "long_term_memories_found": 3,
+  "turns_in_memory": 2,
+  "memory_type": "LTM (Long-Term Memory with Semantic Strategy)"
+}
+```
+
+**Key takeaway:** Long-term memory transforms agents from having conversations to building relationships. The semantic strategy automatically identifies and stores important information, making agents truly remember users across sessions.
 
 ---
 

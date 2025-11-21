@@ -237,6 +237,144 @@ Before deploying a new agent:
 - [ ] Security review done
 - [ ] Teammate notified
 
+---
+
+## Short-Term Memory Agent
+
+**File**: `memory_stm_agent.py`  
+**Status**: Active  
+**SDK**: bedrock-agentcore 1.0.6
+**Memory**: STM (Short-Term Memory)
+
+### Overview
+
+This agent demonstrates how to actually USE AgentCore's short-term memory. Unlike the earlier examples that had memory resources but didn't use them, this agent actively stores and retrieves conversation history.
+
+### How It Works
+
+1. Gets session_id from AgentCore context
+2. Creates/retrieves a memory session
+3. Retrieves last 5 conversation turns
+4. Provides context to Claude
+5. Stores user message in memory
+6. Stores Claude's response in memory
+
+### Memory Operations
+
+```python
+# Get recent turns
+recent_turns = session.get_last_k_turns(k=5)
+
+# Add user message
+session.add_turns(messages=[
+    ConversationalMessage(user_message, MessageRole.USER)
+])
+
+# Add assistant response  
+session.add_turns(messages=[
+    ConversationalMessage(agent_message, MessageRole.ASSISTANT)
+])
+```
+
+### Testing
+
+The agent maintains conversation context within a session:
+
+```bash
+# First message
+{"prompt": "My name is Alice"}
+# Response: "Nice to meet you, Alice!"
+
+# Second message (same session)
+{"prompt": "What is my name?"}
+# Response: "Your name is Alice!"
+```
+
+### Configuration
+
+- Memory mode: STM_ONLY (default)
+- Works with any AgentCore memory resource
+- Session-based (same session_id = same conversation)
+
+---
+
+## Long-Term Memory Agent
+
+**File**: `memory_ltm_agent.py`  
+**Status**: Active  
+**SDK**: bedrock-agentcore 1.0.6
+**Memory**: LTM (Long-Term Memory with Semantic Strategy)
+
+### Overview
+
+This agent demonstrates AgentCore's long-term memory with semantic strategy. It automatically extracts facts and preferences from conversations and stores them for future retrieval.
+
+### How It Works
+
+1. Stores conversation turns (same as STM)
+2. **Semantic strategy automatically extracts insights** (happens in background)
+3. Searches long-term memories relevant to current query
+4. Provides both recent context AND long-term facts to Claude
+5. Agent responds with knowledge from past sessions
+
+### Memory Operations
+
+```python
+# Get recent turns (STM)
+recent_turns = session.get_last_k_turns(k=5)
+
+# Search long-term memories (LTM)
+long_term_memories = session.search_long_term_memories(
+    query=user_message,
+    namespace_prefix="/",
+    top_k=3
+)
+
+# Both contexts provided to Claude
+```
+
+### Key Difference from STM
+
+**Code**: Nearly identical!  
+**Configuration**: Uses semantic strategy instead of STM_ONLY  
+**Behavior**: Automatically extracts and stores facts
+
+### Semantic Strategy
+
+When enabled, AgentCore:
+- Analyzes conversation turns
+- Extracts key facts (names, preferences, etc.)
+- Stores them in searchable format
+- Takes ~30 seconds after conversation
+- Persists across sessions
+
+### Example
+
+**Session 1:**
+```
+User: "My name is Alice, I work at Anthus"
+Agent: "Nice to meet you, Alice!"
+[Semantic strategy extracts: name=Alice, company=Anthus]
+```
+
+**Session 2 (days later):**
+```
+User: "Where do I work?"
+Agent: "You work at Anthus!"
+[Retrieved from long-term memory]
+```
+
+### Configuration
+
+Must be deployed with semantic strategy:
+
+```bash
+agentcore configure --entrypoint memory_ltm_agent.py
+# Choose: "Create new memory with STM + LTM (semantic strategy)"
+```
+
+---
+
 ## Shared Agent Registry
 
 Keep track of agents in this playground:
@@ -244,6 +382,9 @@ Keep track of agents in this playground:
 | Agent Name | File | Type | Status | Last Updated |
 |------------|------|------|--------|--------------|
 | Hello World | hello_agent.py | Simple AgentCore app | Active | 2025-11-20 |
+| Claude Agent | claude_agent.py | AI-powered | Active | 2025-11-20 |
+| STM Agent | memory_stm_agent.py | Short-term memory | Active | 2025-11-20 |
+| LTM Agent | memory_ltm_agent.py | Long-term memory | Active | 2025-11-20 |
 
 Update this table when creating new agents or making changes.
 
